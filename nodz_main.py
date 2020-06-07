@@ -3,7 +3,7 @@ import re
 import json
 import copy
 
-from glm.Qtpy.Qt import QtGui, QtCore, QtWidgets
+from Qt import QtGui, QtCore, QtWidgets
 import nodz_utils as utils
 import nodz_extra
 
