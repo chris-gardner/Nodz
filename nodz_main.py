@@ -11,6 +11,11 @@ import nodz_extra
 defaultConfigPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.json')
 
 
+class VariantAnimation(QtCore.QVariantAnimation):
+    def updateCurrentValue(self, value):
+        pass
+
+
 class ConnectionInfo():
     def __init__(self, connectionItem):
         # Storage.
@@ -29,27 +34,20 @@ class Nodz(QtWidgets.QGraphicsView):
 
     """
     
-    # if we want to be more generic, should use pre and post signals, and fetch whatever in Layout side,
-    # but this is not resilient to nested calls :/
-    # some calls have not been handled via those methodes : createNode (handled via nodeCreator overload),
-    # editNode, deleteNode, createAttribute, editAttribute, deleteAttribute : they are not called directly by
-    # LayoutEditor, but encapsulated via nodeCreator, loadGraph, etc. We issue less events if handling the top level
-    # action issueing this
+    # if we want to be more generic, should use pre and post signals, and fetch whatever in Layout side, but this is not resilient to nested calls :/
+    # some calls have not been handled via those methodes : createNode (handled via nodeCreator overload), editNode, deleteNode, createAttribute, editAttribute, deleteAttribute : they are not called directly by LayoutEditor, but encapsulated via nodeCreator, loadGraph, etc. We issue less events if handling the top level action issueing this
     # all undo calls start with emitter nodzInstance
-    signal_UndoRedoModifySelection = QtCore.Signal(object, object, object)
-    # node id list before, node id list after. signal_NodeSelected does not send previous selection
-    signal_UndoRedoDeleteSelectedNodes = QtCore.Signal(object, object)
-    # list of deleted nodes (user data copies). signal_NodeDeleted does only send deleted node names,
-    # too late to get their userData for redo
+    signal_UndoRedoModifySelection = QtCore.Signal(object, object,
+                                                   object)  # node id list before, node id list after. signal_NodeSelected does not send previous selection
+    signal_UndoRedoDeleteSelectedNodes = QtCore.Signal(object,
+                                                       object)  # list of deleted nodes (user data copies). signal_NodeDeleted does only send deleted node names, too late to get their userData for redo
     # # signal_UndoRedoEditNodeName = QtCore.Signal(object, str, str) # node name before, node name after UNUSED
-    signal_UndoRedoAddNode = QtCore.Signal(object, object)
-    # node added user data. For consistency with signal_UndoRedoDeleteSelectedNodes
-    # (we may actually store undo via signal_NodeCreated, but would be called a lot of time from loadGraph)
-    signal_UndoRedoMoveNodes = QtCore.Signal(object, object, object, object)
-    # node name list, fromPos list, toPos list. signal_NodeMoved does not send previous position
-    signal_UndoRedoConnectNodes = QtCore.Signal(object, object, object)
-    # list of removed ConnectionInfo (potentially due to addition), list of new ConnectionInfo.
-    # Could deal with it with plug/socket connected / disconnected but would be tedious with a lot of calls
+    signal_UndoRedoAddNode = QtCore.Signal(object,
+                                           object)  # node added user data. For consistency with signal_UndoRedoDeleteSelectedNodes (we may actually store undo via signal_NodeCreated, but would be called a lot of time from loadGraph)
+    signal_UndoRedoMoveNodes = QtCore.Signal(object, object, object,
+                                             object)  # node name list, fromPos list, toPos list. signal_NodeMoved does not send previous position
+    signal_UndoRedoConnectNodes = QtCore.Signal(object, object,
+                                                object)  # list of removed ConnectionInfo (potentially due to addition), list of new ConnectionInfo. Could deal with it with plug/socket connected / disconnected but would be tedious with a lot of calls
     
     signal_dropOnNode = QtCore.Signal(object, object)  # nodzInst, nodeItem
     
@@ -176,8 +174,8 @@ class Nodz(QtWidgets.QGraphicsView):
     
     
     def event(self, event):
-        if (self.editEnabled and event.type() == QtCore.QEvent.KeyPress):
-            # bypass QWidget behaviors which is to checks for Tab and Shift+Tab and tries to move the focus appropriately
+        if (
+                self.editEnabled and event.type() == QtCore.QEvent.KeyPress):  # bypass QWidget behaviors which is to checks for Tab and Shift+Tab and tries to move the focus appropriately
             self.keyPressEvent(event)
             return True
         
@@ -556,6 +554,18 @@ class Nodz(QtWidgets.QGraphicsView):
         return painterPath
     
     
+    def animFitInView(self, end_rect):
+        print 'animFitInView'
+        start_rect = QtCore.QRectF(self.viewport().rect())
+        anim = VariantAnimation()
+        anim.setDuration = 3000
+        anim.setStartValue(start_rect)
+        anim.setEndValue(end_rect)
+        anim.setParent(self)
+        anim.valueChanged.connect(lambda x: self.fitInView(x, QtCore.Qt.KeepAspectRatio))
+        anim.start()
+    
+    
     def _focus(self):
         """
         Center on selected nodes or all of them if no active selection.
@@ -563,10 +573,10 @@ class Nodz(QtWidgets.QGraphicsView):
         """
         if self.scene().selectedItems():
             itemsArea = self._getSelectionBoundingbox()
-            self.fitInView(itemsArea, QtCore.Qt.KeepAspectRatio)
+            self.animFitInView(itemsArea)
         else:
             itemsArea = self.scene().itemsBoundingRect()
-            self.fitInView(itemsArea, QtCore.Qt.KeepAspectRatio)
+            self.animFitInView(itemsArea)
     
     
     def _getSelectionBoundingbox(self):
@@ -1371,10 +1381,8 @@ class Nodz(QtWidgets.QGraphicsView):
     def removeConnectionByInfo(self, connectionInfo):
         for item in self.scene().items():
             if (isinstance(item, ConnectionItem)):
-                if (item.plugNode == connectionInfo.plugNode and
-                        item.plugAttr == connectionInfo.plugAttr and
-                        item.socketNode == connectionInfo.socketNode and
-                        item.socketAttr == connectionInfo.socketAttr):
+                if (
+                        item.plugNode == connectionInfo.plugNode and item.plugAttr == connectionInfo.plugAttr and item.socketNode == connectionInfo.socketNode and item.socketAttr == connectionInfo.socketAttr):
                     item._remove()
     
     
@@ -2153,9 +2161,8 @@ class NodeItem(QtWidgets.QGraphicsItem):
                                 text_height)
         
         if (self.icon is not None):
-            if (nodeSizeInScreenPixels > big_icon_display_limit and
-                    nodeSizeInScreenPixels > titleDisplayLimitPixOnScreen):
-                # display beside the node title
+            if (
+                    nodeSizeInScreenPixels > big_icon_display_limit and nodeSizeInScreenPixels > titleDisplayLimitPixOnScreen):  # display beside the node title
                 iconSize = 32
                 margin = 4
                 iconRect = QtCore.QRect(textRect.left() - (iconSize / 2),
@@ -2273,8 +2280,7 @@ class NodeItem(QtWidgets.QGraphicsItem):
                     self.attributeBeingPlugged.mousePressEvent(event)
             else:
                 super(NodeItem, self).mousePressEvent(event)
-                self.lastMousePressPos = self.pos()
-                # take position after potential node selection / edition which may change the layout
+                self.lastMousePressPos = self.pos()  # take position after potential node selection / edition which may change the layout
         else:
             super(NodeItem, self).mousePressEvent(event)
     
@@ -2323,8 +2329,7 @@ class NodeItem(QtWidgets.QGraphicsItem):
                 if event.modifiers() & QtCore.Qt.AltModifier:
                     self._disconnectAll()
                 
-                # Handle drop on link : highlight currently selected link if any,
-                # and only if nodeItem is a pass through (1 in 1 out)
+                # Handle drop on link : highlight currently selected link if any, and only if nodeItem is a pass through (1 in 1 out)
                 nodzInst.currentHoveredLink = None
                 if (len(self.plugs) == 1 and len(self.sockets) == 1):
                     theNodePlug = self.plugs.itervalues().next()
@@ -2431,8 +2436,8 @@ class NodeItem(QtWidgets.QGraphicsItem):
                         nodzInst.signal_UndoRedoConnectNodes.emit(nodzInst, removedConnections, addedConnections)
                     
                     if nodzInst.currentHoveredNodeForDrop is not None:
-                        nodzInst.signal_dropOnNode.emit(nodzInst, nodzInst.currentHoveredNodeForDrop.name)
-                        # can get back selection from nodzInst
+                        nodzInst.signal_dropOnNode.emit(nodzInst,
+                                                        nodzInst.currentHoveredNodeForDrop.name)  # can get back selection from nodzInst
             
             elif (event.button() == QtCore.Qt.MiddleButton):
                 if (self.attributeBeingPlugged is not None):
@@ -2596,9 +2601,8 @@ class SlotItem(QtWidgets.QGraphicsItem):
                                 validConnection = validConnection and connection.plugNode != processedNodes[
                                     0]  # processedNodes[0] is theSocketItem.parentItem()
                             else:
-                                nextNodesToProcess.append(self.scene().nodes[connection.plugNode])
-                                # may be stacked several times in nextNodesToProcess, but will be skipped
-                                # later by processedNodes test
+                                nextNodesToProcess.append(self.scene().nodes[
+                                                              connection.plugNode])  # may be stacked several times in nextNodesToProcess, but will be skipped later by processedNodes test
                         if not validConnection:
                             break
                 nodesToProcess = nextNodesToProcess[:]
