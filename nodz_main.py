@@ -174,8 +174,8 @@ class Nodz(QtWidgets.QGraphicsView):
     
     
     def event(self, event):
-        if (
-                self.editEnabled and event.type() == QtCore.QEvent.KeyPress):  # bypass QWidget behaviors which is to checks for Tab and Shift+Tab and tries to move the focus appropriately
+        if (self.editEnabled and event.type() == QtCore.QEvent.KeyPress):
+            # bypass QWidget behaviors which is to checks for Tab and Shift+Tab and tries to move the focus appropriately
             self.keyPressEvent(event)
             return True
         
@@ -203,8 +203,9 @@ class Nodz(QtWidgets.QGraphicsView):
     
     
     def contextMenuEvent(self, event):
-        if (event.modifiers() & QtCore.Qt.AltModifier) or (event.modifiers() & QtCore.Qt.ControlModifier) or (
-                not self.editEnabled):
+        if (event.modifiers() & QtCore.Qt.AltModifier) or \
+                (event.modifiers() & QtCore.Qt.ControlModifier) or \
+                (not self.editEnabled):
             return
         
         p = event.pos()
@@ -1559,56 +1560,27 @@ class NodeScene(QtWidgets.QGraphicsScene):
         """
         if self.views()[0].gridVisToggle:
             
-            nodzInst = self.parent()
-            
-            painter.save()
-            backgroundRect = QtCore.QRectF(nodzInst.viewport().rect())
-            
-            painterTransform = painter.transform()
-            painter.resetTransform()
-            
-            painterTranslation = QtCore.QPointF(painterTransform.dx(), painterTransform.dy())
-            
-            # Translate the painter during the scrollHandDrag mode only. Note : Glitches when starting zooming
-            if (nodzInst.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag):
-                painter.translate(painterTranslation)
-                backgroundRect.translate(-painterTranslation)
-            
-            painter.fillRect(backgroundRect, self.gridBrush)
-            
-            painter.restore()
-            
-            # nodzInst = self.parent() #.views()[0]
-            # # config = nodzInst.config
-            
-            # viewport_rect = QtCore.QRect(
-            #     0, 0, nodzInst.viewport().width(), nodzInst.viewport().height())
-            # visible_scene_rect = nodzInst.mapToScene(viewport_rect).boundingRect()
-            
-            # gridSize = self.gridSize * visible_scene_rect.width() / viewport_rect.width()
-            
-            # leftLine = rect.left() - rect.left() % gridSize
-            # topLine = rect.top() - rect.top() % gridSize
-            # lines = list()
-            
-            # i = int(leftLine)
-            # while i < int(rect.right()):
-            #     lines.append(QtCore.QLineF(i, rect.top(), i, rect.bottom()))
-            #     i += gridSize
-            
-            # u = int(topLine)
-            # while u < int(rect.bottom()):
-            #     lines.append(QtCore.QLineF(rect.left(), u, rect.right(), u))
-            #     u += gridSize
-            
-            # self.pen = QtGui.QPen()
-            # config = self.parent().config
-            # self.pen.setColor(utils._convertDataToColor(config['grid_color']))
-            # self.pen.setWidth(0)
-            # painter.setPen(self.pen)
-            # painter.drawLines(lines)
-    
-    
+            realLeft = int(rect.left())
+            realRight = int(rect.right())
+            realTop = int(rect.top())
+            realBottom = int(rect.bottom())
+
+            gridSize = 50
+            firstLeft = realLeft - (realLeft % gridSize)
+            firstTop = realTop - (realTop % gridSize)
+
+            # draw the grid lines
+            lines = []
+            for x in range(firstLeft, realRight, gridSize):
+                lines.append(QtCore.QLine(x, realTop, x, realBottom))
+            for y in range(firstTop, realBottom, gridSize):
+                lines.append(QtCore.QLine(realLeft, y, realRight, y))
+
+            gridpen = QtGui.QPen(QtCore.Qt.darkGray)
+            painter.setPen(gridpen)
+            painter.drawLines(lines)
+
+
     def updateScene(self):
         """
         Update the connections position.
@@ -1687,9 +1659,6 @@ class NodeItem(QtWidgets.QGraphicsItem):
         aHeight = self.baseHeight
         if self.attrCount > 0:
             aHeight += self.attrHeight * self.attrCount + self.border + 0.5 * self.radius
-        
-        if (self.usingSquareDisplay):
-            aHeight = max(self.baseWidth, aHeight)
         
         return aHeight
     
