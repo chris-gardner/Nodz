@@ -11,11 +11,6 @@ import nodz_extra
 defaultConfigPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.json')
 
 
-class VariantAnimation(QtCore.QVariantAnimation):
-    def updateCurrentValue(self, value):
-        pass
-
-
 class ConnectionInfo():
     def __init__(self, connectionItem):
         # Storage.
@@ -114,7 +109,14 @@ class Nodz(QtWidgets.QGraphicsView):
         self.sourceSlot = None
         self.allowLoop = True
         
+        # speed of animations in millseconds
+        self.animSpeed = 2000
+        
         self.editEnabled = True
+        
+        self.allowNodeMove = True
+        self.allowConnectionEdit = True
+        self.allowNodeEdit = True
         
         # Display options.
         self.currentState = 'DEFAULT'
@@ -481,7 +483,7 @@ class Nodz(QtWidgets.QGraphicsView):
         
         if event.key() == QtCore.Qt.Key_A:
             itemsArea = self.scene().itemsBoundingRect()
-            self.fitInView(itemsArea, QtCore.Qt.KeepAspectRatio)
+            self.animFitInView(itemsArea)
         
         if event.key() == QtCore.Qt.Key_S:
             self._nodeSnap = True
@@ -557,8 +559,9 @@ class Nodz(QtWidgets.QGraphicsView):
     
     def animFitInView(self, end_rect):
         start_rect = self._getVisibleRect()
-        anim = VariantAnimation()
-        anim.setDuration = 3000
+        anim = QtCore.QVariantAnimation()
+        anim.setDuration = self.animSpeed
+        anim.setEasingCurve(QtCore.QEasingCurve.OutCubic)
         anim.setStartValue(start_rect)
         anim.setEndValue(end_rect)
         anim.setParent(self)
@@ -1564,23 +1567,23 @@ class NodeScene(QtWidgets.QGraphicsScene):
             realRight = int(rect.right())
             realTop = int(rect.top())
             realBottom = int(rect.bottom())
-
+            
             gridSize = 50
             firstLeft = realLeft - (realLeft % gridSize)
             firstTop = realTop - (realTop % gridSize)
-
+            
             # draw the grid lines
             lines = []
             for x in range(firstLeft, realRight, gridSize):
                 lines.append(QtCore.QLine(x, realTop, x, realBottom))
             for y in range(firstTop, realBottom, gridSize):
                 lines.append(QtCore.QLine(realLeft, y, realRight, y))
-
+            
             gridpen = QtGui.QPen(QtCore.Qt.darkGray)
             painter.setPen(gridpen)
             painter.drawLines(lines)
-
-
+    
+    
     def updateScene(self):
         """
         Update the connections position.
