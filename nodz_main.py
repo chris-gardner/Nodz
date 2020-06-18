@@ -570,19 +570,23 @@ class Nodz(QtWidgets.QGraphicsView):
         anim.start()
     
     
-    def _focus(self):
+    def _focus(self, all=False):
         """
         Center on selected nodes or all of them if no active selection.
 
         """
-        if self.scene().selectedItems():
-            itemsArea = self._getSelectionBoundingbox()
-            # pad out the bounding box a bit
-            itemsArea.adjust(-50, -50, 50, 50)
-            self.animFitInView(itemsArea)
-        else:
+        if all:
             itemsArea = self.scene().itemsBoundingRect()
             self.animFitInView(itemsArea)
+        else:
+            if self.scene().selectedItems():
+                itemsArea = self._getSelectionBoundingbox()
+                # pad out the bounding box a bit
+                itemsArea.adjust(-50, -50, 50, 50)
+                self.animFitInView(itemsArea)
+            else:
+                itemsArea = self.scene().itemsBoundingRect()
+                self.animFitInView(itemsArea)
     
     
     def _getVisibleRect(self):
@@ -1655,7 +1659,6 @@ class NodeItem(QtWidgets.QGraphicsItem):
         
         # Methods.
         self._createStyle(config)
-        print self.scene()
     
     
     @property
