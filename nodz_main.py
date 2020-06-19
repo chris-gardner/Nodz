@@ -6,6 +6,7 @@ import copy
 from Qt import QtGui, QtCore, QtWidgets
 import nodz_utils as utils
 import nodz_extra
+reload(nodz_extra)
 
 
 defaultConfigPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.json')
@@ -859,11 +860,11 @@ class Nodz(QtWidgets.QGraphicsView):
             # Set node position.
             self.scene().addItem(nodeItem)
             nodeItem.setPos(position - nodeItem.nodeCenter)
-
+            
             if self.editLevel > 0:
                 nodeItem.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable)
                 nodeItem.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
-
+            
             nodeItem.checkIsWithinSceneRect()
             
             # Emit signal.
@@ -1139,6 +1140,10 @@ class Nodz(QtWidgets.QGraphicsView):
             self.signal_AttrEdited.emit(node.name, index, newIndex)
         else:
             self.signal_AttrEdited.emit(node.name, index, index)
+    
+    
+    def arrangeGraph(self, start_node, vspace=150):
+        nodz_extra.Arranger(start_node, vspace=vspace).arrange()
     
     
     # GRAPH
@@ -2298,9 +2303,9 @@ class NodeItem(QtWidgets.QGraphicsItem):
             if (self.attributeBeingPlugged is not None):
                 self.attributeBeingPlugged.mouseMoveEvent(event)
                 return
-
+        
         if self.scene().parent().editLevel > 0:
-
+            
             if self.scene().views()[0].gridVisToggle:
                 if self.scene().views()[0].gridSnapToggle or self.scene().views()[0]._nodeSnap:
                     gridSize = self.scene().gridSize
@@ -2321,7 +2326,7 @@ class NodeItem(QtWidgets.QGraphicsItem):
             # Moving the node : is there a connectionItem around there to plug ourself
             nodzInst = self.scene().views()[0]
             config = nodzInst.config
-
+            
             if self.scene().parent().editLevel > 1:
                 if event.modifiers() & QtCore.Qt.AltModifier:
                     self._disconnectAll()
