@@ -1,12 +1,14 @@
 from Qt import QtGui, QtCore, QtWidgets
 import nodz_main
 
-class QtPopupLineEditWidget(QtWidgets.QLineEdit):
 
+class QtPopupLineEditWidget(QtWidgets.QLineEdit):
+    
     @staticmethod
     def defaultNodeCreator(nodzInst, nodeName, pos):
         nodzInst.createNode(name=nodeName, position=pos)
-
+    
+    
     def __init__(self, nodzInst, nodeList=[], nodeCreator=None):
         """
         Initialize the graphics view.
@@ -20,11 +22,12 @@ class QtPopupLineEditWidget(QtWidgets.QLineEdit):
         else:
             self.nodeCreator = nodeCreator
         self.returnPressed.connect(self.onReturnPressedSlot)
-        #hide by default
+        # hide by default
         self.hide()
         self.clear()
         self.parentWidget().setFocus()
-
+    
+    
     def popup(self):
         position = self.parentWidget().mapFromGlobal(QtGui.QCursor.pos())
         self.move(position)
@@ -33,36 +36,41 @@ class QtPopupLineEditWidget(QtWidgets.QLineEdit):
         self.setFocus()
         self.setNodesList(self.nodeList)
         self.completer.complete()
-
+    
+    
     def popdown(self):
         self.hide()
         self.clear()
         self.parentWidget().setFocus()
-
+    
+    
     def setNodesList(self, nodeList):
         self.nodeList = nodeList
         self.completer = QtWidgets.QCompleter(self.nodeList, self)
         self.completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.setCompleter(self.completer)
         self.completer.activated.connect(self.onCompleterActivatedSlot)
-
+        
         fontMetrics = QtGui.QFontMetrics(self.font())
         maxSize = self.size()
         for nodeName in self.nodeList:
             boundingSize = fontMetrics.boundingRect(nodeName).size()
-            maxSize.setWidth(max(maxSize.width(), boundingSize.width()+30))  #30 is for margin
+            maxSize.setWidth(max(maxSize.width(), boundingSize.width() + 30))  # 30 is for margin
         self.resize(maxSize.width(), self.size().height())
-
+    
+    
     def focusOutEvent(self, QFocusEvent):
         self.popdown()
-
+    
+    
     def onCompleterActivatedSlot(self, text):
-        pos=QtCore.QPointF(self.nodzInst.mapToScene(self.pos()))
+        pos = QtCore.QPointF(self.nodzInst.mapToScene(self.pos()))
         self.popdown()
         newNode = self.nodeCreator(self.nodzInst, text, pos)
         if newNode is not None:
             self.nodzInst.signal_UndoRedoAddNode.emit(self.nodzInst, newNode.userData)
-
+    
+    
     def onReturnPressedSlot(self):
         name = self.text()
         pos = QtCore.QPointF(self.nodzInst.mapToScene(self.pos()))
@@ -71,7 +79,6 @@ class QtPopupLineEditWidget(QtWidgets.QLineEdit):
         newNode = self.nodeCreator(self.nodzInst, name, pos)
         if newNode is not None:
             self.nodzInst.signal_UndoRedoAddNode.emit(self.nodzInst, newNode.userData)
-
 
 
 class Arranger(object):
@@ -143,12 +150,11 @@ class Arranger(object):
         
         start_voffset = self.voffset
         connected_nodes = []
-        for i, conn in enumerate(start_node.sockets['layers'].connections):
-            node_coll = [x for x in start_node.scene().nodes.values() if x.name == conn.plugNode]
-            connected_nodes.append(node_coll[0])
-        for i, conn in enumerate(start_node.sockets['clips'].connections):
-            node_coll = [x for x in start_node.scene().nodes.values() if x.name == conn.plugNode]
-            connected_nodes.append(node_coll[0])
+        socket_names = start_node.sockets.keys()
+        for socket in socket_names:
+            for i, conn in enumerate(start_node.sockets[socket].connections):
+                node_coll = [x for x in start_node.scene().nodes.values() if x.name == conn.plugNode]
+                connected_nodes.append(node_coll[0])
         
         if connected_nodes:
             # it has children. average it's position vertically
@@ -183,4 +189,3 @@ class Arranger(object):
             start_node.scene().updateScene()
         
         return start_voffset + (self.voffset - start_voffset) * 0.5
-
