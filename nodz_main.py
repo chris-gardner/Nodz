@@ -6,8 +6,9 @@ import copy
 from Qt import QtGui, QtCore, QtWidgets
 import nodz_utils as utils
 import nodz_extra
-reload(nodz_extra)
 
+
+reload(nodz_extra)
 
 defaultConfigPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.json')
 
@@ -1015,8 +1016,8 @@ class Nodz(QtWidgets.QGraphicsView):
             return
         
         if name in node.attrs:
-            print 'An attribute with the same name already exists : {0}'.format(name)
-            print 'Attribute creation aborted !'
+            # print 'An attribute with the same name already exists : {0}'.format(name)
+            # print 'Attribute creation aborted !'
             return
         
         node._createAttribute(name=name, index=index, preset=preset, plug=plug, socket=socket, dataType=dataType,
