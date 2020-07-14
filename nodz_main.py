@@ -2,6 +2,7 @@ import os
 import re
 import json
 import copy
+import math
 
 from Qt import QtGui, QtCore, QtWidgets
 import nodz_utils as utils
@@ -135,6 +136,7 @@ class Nodz(QtWidgets.QGraphicsView):
         self.dropAccept = False
         
         self.cutTool = None
+        self.lastMousePos = None
         
         self.setRenderHints(
             QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform | QtGui.QPainter.HighQualityAntialiasing)
@@ -193,18 +195,11 @@ class Nodz(QtWidgets.QGraphicsView):
 
         """
         self.currentState = 'ZOOM_VIEW'
-        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
         
-        inFactor = 1.15
-        outFactor = 1 / inFactor
-        
-        if event.angleDelta().y() > 0:
-            zoomFactor = inFactor
-        else:
-            zoomFactor = outFactor
-        
-        self.scale(zoomFactor, zoomFactor)
+        self.scaleView(math.pow(2.0, event.delta() / 240.0))
         self.currentState = 'DEFAULT'
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
     
     
     def contextMenuEvent(self, event):
@@ -302,6 +297,17 @@ class Nodz(QtWidgets.QGraphicsView):
         super(Nodz, self).mousePressEvent(event)
     
     
+    def scaleView(self, scaleFactor):
+        """
+        Zoom helper function.
+        """
+        factor = self.matrix().scale(scaleFactor, scaleFactor).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
+        # limit the scaling to something sane
+        if factor < 0.1 or factor > 10:
+            return
+        self.scale(scaleFactor, scaleFactor)
+    
+    
     def mouseMoveEvent(self, event):
         """
         Update tablet zoom, canvas dragging and selection.
@@ -328,20 +334,12 @@ class Nodz(QtWidgets.QGraphicsView):
                 self.zoomDirection = 1
                 self.zoomIncr += 1
             
-            if self.zoomDirection == 1:
-                zoomFactor = 1.03
-            else:
-                zoomFactor = 1 / 1.03
-            
-            # Perform zoom and re-center on initial click position.
-            pBefore = self.mapToScene(self.initMousePos)
             self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
-            self.scale(zoomFactor, zoomFactor)
-            pAfter = self.mapToScene(self.initMousePos)
-            diff = pAfter - pBefore
+            delta = event.pos() - self.lastMousePos
+            dx = math.pow(2.0, delta.x() / 240.0)
+            self.scaleView(dx)
             
             self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
-            self.translate(diff.x(), diff.y())
         
         # Drag canvas.
         elif self.currentState == 'DRAG_VIEW':
@@ -364,6 +362,8 @@ class Nodz(QtWidgets.QGraphicsView):
               self.currentState == 'SUBTRACT_SELECTION' or
               self.currentState == 'TOGGLE_SELECTION'):
             self.rubberband.setGeometry(QtCore.QRect(self.origin, event.pos()).normalized())
+        
+        self.lastMousePos = event.pos()
         
         super(Nodz, self).mouseMoveEvent(event)
     
@@ -818,7 +818,7 @@ class Nodz(QtWidgets.QGraphicsView):
     
     
     # NODES
-    def createNode(self, name='default', preset='node_default', position=None, alternate=True):
+    def createNode(self, name='default', label=None, preset='node_default', position=None, alternate=True):
         """
         Create a new node with a given name, position and color.
 
@@ -847,31 +847,31 @@ class Nodz(QtWidgets.QGraphicsView):
             print 'A node with the same name already exists : {0}'.format(name)
             print 'Node creation aborted !'
             return
-        else:
-            nodeItem = NodeItem(name=name, alternate=alternate, preset=preset,
-                                config=self.config)
-            
-            # Store node in scene.
-            self.scene().nodes[name] = nodeItem
-            
-            if position is None:
-                # Get the center of the view.
-                position = self.mapToScene(self.viewport().rect().center())
-            
-            # Set node position.
-            self.scene().addItem(nodeItem)
-            nodeItem.setPos(position - nodeItem.nodeCenter)
-            
-            if self.editLevel > 0:
-                nodeItem.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable)
-                nodeItem.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
-            
-            nodeItem.checkIsWithinSceneRect()
-            
-            # Emit signal.
-            self.signal_NodeCreated.emit(name)
-            
-            return nodeItem
+        
+        nodeItem = NodeItem(name=name, label=label, alternate=alternate, preset=preset,
+                            config=self.config)
+        
+        # Store node in scene.
+        self.scene().nodes[name] = nodeItem
+        
+        if position is None:
+            # Get the center of the view.
+            position = self.mapToScene(self.viewport().rect().center())
+        
+        # Set node position.
+        self.scene().addItem(nodeItem)
+        nodeItem.setPos(position - nodeItem.nodeCenter)
+        
+        if self.editLevel > 0:
+            nodeItem.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable)
+            nodeItem.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
+        
+        nodeItem.checkIsWithinSceneRect()
+        
+        # Emit signal.
+        self.signal_NodeCreated.emit(name)
+        
+        return nodeItem
     
     
     def deleteNode(self, node):
@@ -1617,13 +1617,16 @@ class NodeItem(QtWidgets.QGraphicsItem):
     """
     
     
-    def __init__(self, name, alternate, preset, config):
+    def __init__(self, name, preset, config, label=None, alternate=True):
         """
         Initialize the class.
 
         :type  name: str.
         :param name: The name of the node. The name has to be unique
                      as it is used as a key to store the node object.
+
+        :type  label: str.
+        :param label: Label to display on the node
 
         :type  alternate: bool.
         :param alternate: The attribute color alternate state, if True,
@@ -1641,6 +1644,7 @@ class NodeItem(QtWidgets.QGraphicsItem):
         
         # Storage
         self.name = name
+        self.label = label or name
         self.alternate = alternate
         self.nodePreset = preset
         self.attrPreset = None
@@ -2153,8 +2157,8 @@ class NodeItem(QtWidgets.QGraphicsItem):
         painter.setFont(self._nodeTextFont)
         
         metrics = QtGui.QFontMetrics(painter.font())
-        text_width = metrics.boundingRect(self.name).width() + 14
-        text_height = metrics.boundingRect(self.name).height() + 14
+        text_width = metrics.boundingRect(self.label).width() + 14
+        text_height = metrics.boundingRect(self.label).height() + 14
         margin = (text_width - self.baseWidth) * 0.5
         textRect = QtCore.QRect(-margin,
                                 -text_height,
@@ -2193,7 +2197,7 @@ class NodeItem(QtWidgets.QGraphicsItem):
         if (nodeSizeInScreenPixels > titleDisplayLimitPixOnScreen):
             painter.drawText(textRect,
                              QtCore.Qt.AlignCenter,
-                             self.name)
+                             self.label)
         
         # Attributes.
         if (nodeSizeInScreenPixels >= big_icon_display_limit):
