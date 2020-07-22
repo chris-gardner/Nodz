@@ -91,8 +91,8 @@ class Arranger(object):
         self.start_node = start_node
         
         rect = start_node.scene().sceneRect()
-        self.cx = rect.right()
-        self.cy = rect.bottom()
+        self.cx = 0
+        self.cy = 0
         
         self.bbmin = [999999999, 999999999]
         self.bbmax = [-999999999, -999999999]
