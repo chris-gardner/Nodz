@@ -82,7 +82,7 @@ class QtPopupLineEditWidget(QtWidgets.QLineEdit):
 
 
 class Arranger(object):
-    def __init__(self, start_node, hspace=400, vspace=100, padding=300):
+    def __init__(self, start_node, hspace=400, vspace=100, padding=200):
         self.voffset = 0
         self.hspace = hspace
         self.vspace = vspace
@@ -157,35 +157,29 @@ class Arranger(object):
                 connected_nodes.append(node_coll[0])
         
         if connected_nodes:
-            # it has children. average it's position vertically
-            avg = 0
             for node in connected_nodes:
-                if node not in self.visited_nodes:
-                    avg += self.adjuster(node, depth=depth + 1)
-                    self.visited_nodes.append(node)
-            avg /= len(connected_nodes)
+                # if node not in self.visited_nodes:
+                self.adjuster(node, depth=depth + 1)
+                    # self.visited_nodes.append(node)
             
-            if len(connected_nodes) == 1:
-                # if just one child node, copy the vertical position
-                pos = QtCore.QPointF(self.cx - depth * self.hspace, connected_nodes[0].pos().y())
-            else:
-                # more than one child - use the average
-                pos = QtCore.QPointF(self.cx - depth * self.hspace, self.cy - avg * self.vspace)
+            # if just one child node, copy the vertical position
+            pos = QtCore.QPointF(self.cx - depth * self.hspace, connected_nodes[0].pos().y())
             
             start_node.setPos(pos)
             self.adjust_bbox(pos)
         
         else:
+            # if start_node not in self.visited_nodes:
+            # nothing connected. stack it's position vertically
+            pos = QtCore.QPointF(self.cx - depth * self.hspace, self.cy + (self.voffset) * self.vspace)
+            start_node.setPos(pos)
             if start_node not in self.visited_nodes:
-                # nothing connected. stack it's position vertically
-                pos = QtCore.QPointF(self.cx - depth * self.hspace, self.cy - (self.voffset) * self.vspace)
-                start_node.setPos(pos)
                 self.voffset += 1
-                self.adjust_bbox(pos)
-                self.visited_nodes.append(start_node)
+            self.adjust_bbox(pos)
+            self.visited_nodes.append(start_node)
         
         if depth == 0:
             # redraw all the connections and stuff
             start_node.scene().updateScene()
         
-        return start_voffset + (self.voffset - start_voffset) * 0.5
+        return start_voffset + (self.voffset + start_voffset) * 0.5
