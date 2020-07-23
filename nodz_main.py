@@ -221,6 +221,8 @@ class Nodz(QtWidgets.QGraphicsView):
         Initialize tablet zoom, drag canvas and the selection.
 
         """
+        
+        item_under_cursor = self.scene().itemAt(self.mapToScene(event.pos()), QtGui.QTransform())
         # Tablet zoom
         if (event.button() == QtCore.Qt.RightButton and
                 (event.modifiers() & QtCore.Qt.AltModifier)):
@@ -244,7 +246,7 @@ class Nodz(QtWidgets.QGraphicsView):
         # Rubber band selection
         elif (event.button() == QtCore.Qt.LeftButton and
               (event.modifiers() == QtCore.Qt.NoModifier) and
-              self.scene().itemAt(self.mapToScene(event.pos()), QtGui.QTransform()) is None):
+              item_under_cursor is None):
             self.currentState = 'SELECTION'
             self._initRubberband(event.pos())
             self.setInteractive(False)
@@ -268,7 +270,8 @@ class Nodz(QtWidgets.QGraphicsView):
         
         # Subtract selection
         elif (event.button() == QtCore.Qt.LeftButton and
-              (event.modifiers() & QtCore.Qt.ControlModifier)):
+              (event.modifiers() & QtCore.Qt.ControlModifier) and
+              item_under_cursor is None):
             self.currentState = 'SUBTRACT_SELECTION'
             self._initRubberband(event.pos())
             self.setInteractive(False)
@@ -276,7 +279,8 @@ class Nodz(QtWidgets.QGraphicsView):
         
         # Toggle selection
         elif (event.button() == QtCore.Qt.LeftButton and
-              (event.modifiers() & QtCore.Qt.ShiftModifier)):
+              (event.modifiers() & QtCore.Qt.ShiftModifier) and
+              item_under_cursor is None):
             self.currentState = 'TOGGLE_SELECTION'
             self._initRubberband(event.pos())
             self.setInteractive(False)
@@ -1458,7 +1462,6 @@ class Nodz(QtWidgets.QGraphicsView):
         connection.updatePath()
         
         self.scene().addItem(connection)
-        
         return connection
     
     
@@ -1669,6 +1672,20 @@ class NodeItem(QtWidgets.QGraphicsItem):
         
         # Methods.
         self._createStyle(config)
+    
+    
+    def __repr__(self):
+        return "<Node: %s>" % self.label
+    
+    
+    def upstream_nodes(self):
+        ret = [self]
+        socket_names = self.sockets.keys()
+        for socket in socket_names:
+            for i, conn in enumerate(self.sockets[socket].connections):
+                conn_node = self.scene().nodes[conn.plugNode]
+                ret.extend(conn_node.upstream_nodes())
+        return ret
     
     
     @property
@@ -2262,6 +2279,20 @@ class NodeItem(QtWidgets.QGraphicsItem):
         Keep the selected node on top of the others.
 
         """
+        
+        if (event.button() == QtCore.Qt.LeftButton and
+                (event.modifiers() & QtCore.Qt.ShiftModifier)):
+            # select upstream nodes
+            conn_nodes = self.upstream_nodes()
+            for node_name in self.scene().nodes:
+                node = self.scene().nodes[node_name]
+                if node in conn_nodes:
+                    node.setSelected(True)
+                else:
+                    node.setSelected(False)
+            
+            event.accept()
+        
         # nodzInst = self.scene().views()[0]
         if self.scene().parent().editLevel > 0:
             maxZValue = 0
@@ -2964,6 +2995,10 @@ class ConnectionItem(QtWidgets.QGraphicsPathItem):
         
         # Methods.
         self._createStyle()
+    
+    
+    def __repr__(self):
+        return "<ConnectionItem>"
     
     
     @property
