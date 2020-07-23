@@ -489,8 +489,7 @@ class Nodz(QtWidgets.QGraphicsView):
             self._focus()
         
         if event.key() == QtCore.Qt.Key_A:
-            itemsArea = self.scene().itemsBoundingRect()
-            self.animFitInView(itemsArea)
+            self._focus(all=True)
         
         if event.key() == QtCore.Qt.Key_S:
             self._nodeSnap = True
@@ -583,6 +582,7 @@ class Nodz(QtWidgets.QGraphicsView):
         """
         if all:
             itemsArea = self.scene().itemsBoundingRect()
+            itemsArea.adjust(-50, -50, 50, 50)
             self.animFitInView(itemsArea)
         else:
             if self.scene().selectedItems():
@@ -592,6 +592,7 @@ class Nodz(QtWidgets.QGraphicsView):
                 self.animFitInView(itemsArea)
             else:
                 itemsArea = self.scene().itemsBoundingRect()
+                itemsArea.adjust(-50, -50, 50, 50)
                 self.animFitInView(itemsArea)
     
     
