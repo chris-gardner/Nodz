@@ -1668,7 +1668,7 @@ class NodeItem(QtWidgets.QGraphicsItem):
         
         self.icon = None
         self.scaledIcon = None
-        self.usingSquareDisplay = False
+        self.simpleNodeAppearance = False
         
         # Methods.
         self._createStyle(config)
@@ -2159,15 +2159,16 @@ class NodeItem(QtWidgets.QGraphicsItem):
         titleDisplayLimitPixOnScreen = config["node_title_display_limit"]
         big_icon_display_limit = config["big_icon_display_limit"]
         
-        if (nodeSizeInScreenPixels <= big_icon_display_limit):
-            self.usingSquareDisplay = True
+        self.simpleNodeAppearance = nodeSizeInScreenPixels < big_icon_display_limit
+        
+        if self.simpleNodeAppearance:
+            painter.drawRect(0, 0, self.baseWidth, self.height)
         else:
-            self.usingSquareDisplay = False
-        painter.drawRoundedRect(0, 0,
-                                self.baseWidth,
-                                self.height,
-                                self.radius,
-                                self.radius)
+            painter.drawRoundedRect(0, 0,
+                                    self.baseWidth,
+                                    self.height,
+                                    self.radius,
+                                    self.radius)
         
         # Node label.
         painter.setPen(self._textPen)
@@ -2183,8 +2184,7 @@ class NodeItem(QtWidgets.QGraphicsItem):
                                 text_height)
         
         if (self.icon is not None):
-            if (
-                    nodeSizeInScreenPixels > big_icon_display_limit and nodeSizeInScreenPixels > titleDisplayLimitPixOnScreen):  # display beside the node title
+            if not self.simpleNodeAppearance:  # display beside the node title
                 iconSize = 32
                 margin = 4
                 iconRect = QtCore.QRect(textRect.left() - (iconSize / 2),
@@ -2196,7 +2196,7 @@ class NodeItem(QtWidgets.QGraphicsItem):
                                  textRect.top() - (iconSize - text_height + margin) / 2, textRect.width(),
                                  textRect.height())
             
-            elif (nodeSizeInScreenPixels < big_icon_display_limit):
+            else:
                 iconSize = 128
                 if (self.scaledIcon is None):
                     scaledPixmap2 = self.icon.pixmap(iconSize, iconSize).scaled(iconSize, iconSize,
@@ -2205,19 +2205,17 @@ class NodeItem(QtWidgets.QGraphicsItem):
                     self.scaledIcon = QtGui.QIcon(scaledPixmap2)
                 
                 # center on node attributes
-                iconRect = QtCore.QRect(0 + (self.baseWidth - iconSize) / 2,
-                                        0 + (self.baseWidth - iconSize) / 2,
-                                        iconSize, iconSize)
+                iconRect = QtCore.QRect(0 + (self.baseWidth - iconSize) / 2, 0, iconSize, iconSize)
                 
                 self.scaledIcon.paint(painter, iconRect, QtCore.Qt.AlignCenter, QtGui.QIcon.Normal, QtGui.QIcon.On)
         
-        if (nodeSizeInScreenPixels > titleDisplayLimitPixOnScreen):
+        if not self.simpleNodeAppearance:
             painter.drawText(textRect,
                              QtCore.Qt.AlignCenter,
                              self.label)
         
         # Attributes.
-        if (nodeSizeInScreenPixels >= big_icon_display_limit):
+        if not self.simpleNodeAppearance:
             offset = 0
             for attr in self.attrs:
                 
