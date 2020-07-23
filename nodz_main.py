@@ -2211,9 +2211,26 @@ class NodeItem(QtWidgets.QGraphicsItem):
                 self.scaledIcon.paint(painter, iconRect, QtCore.Qt.AlignCenter, QtGui.QIcon.Normal, QtGui.QIcon.On)
         
         if not self.simpleNodeAppearance:
-            painter.drawText(textRect,
-                             QtCore.Qt.AlignCenter,
-                             self.label)
+            painter.drawText(textRect, QtCore.Qt.AlignCenter, self.label)
+        else:
+            if self.isSelected():
+                # screen space constant font size
+                # get the scene scale and multiply the font size by that
+                nodzInst = self.scene().views()[0]
+                factor = nodzInst.matrix().scale(1, 1).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
+                
+                big_font = QtGui.QFont(config['node_font'], config['node_font_size'] * (1 / factor), QtGui.QFont.Bold)
+                painter.setFont(big_font)
+                metrics = QtGui.QFontMetrics(painter.font())
+                text_width = metrics.boundingRect(self.label).width() + 14
+                text_height = metrics.boundingRect(self.label).height() + 14
+                margin = (text_width - self.baseWidth) * 0.5
+                textRect = QtCore.QRect(-margin,
+                                    -text_height,
+                                    text_width,
+                                    text_height)
+                
+                painter.drawText(textRect, QtCore.Qt.AlignCenter, self.label)
         
         # Attributes.
         if not self.simpleNodeAppearance:
