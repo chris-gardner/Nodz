@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import json
 import re
@@ -39,9 +41,9 @@ def _convertDataToColor(data=None, alternate=False, av=20):
 
     # wrong
     else:
-        print 'Color from configuration is not recognized : ', data
-        print 'Can only be [R, G, B] or [R, G, B, A]'
-        print 'Using default color !'
+        print('Color from configuration is not recognized : ', data)
+        print('Can only be [R, G, B] or [R, G, B, A]')
+        print('Using default color !')
         color = QtGui.QColor(120, 120, 120)
         if alternate:
             color = QtGui.QColor(120-av, 120-av, 120-av)
@@ -150,7 +152,7 @@ def _saveData(filePath, data):
                        ensure_ascii=False))
     f.close()
 
-    print "Data successfully saved !"
+    print("Data successfully saved !")
 
 def _loadData(filePath):
     """
@@ -165,6 +167,6 @@ def _loadData(filePath):
 
     json_file.close()
 
-    print "Data successfully loaded !"
+    print("Data successfully loaded !")
     return j_data
 

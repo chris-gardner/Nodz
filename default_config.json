@@ -2,7 +2,7 @@
     // General > Edit values BUT do not delete.
     "scene_width": 1920,
     "scene_height": 1080,
-	"scene_marginRatio": 2,	
+	"scene_marginRatio": 2,
     "grid_size": 36,
     "antialiasing": true,
     "antialiasing_boost": true,
@@ -22,19 +22,20 @@
     "node_attr_height": 30,
     "connection_width": 2,
     "connection_sel_width": 5,
-	
+
     // Display limits for attributes and title, attributes / title will be skipped when nodes width are less than xx pixels on screen
-    "node_title_display_limit": 60,
+    "node_title_display_limit": 100,
     "attributes_display_limit": 115,
-    "big_icon_display_limit": 75,
-    
+    "big_icon_display_limit": 100,
+
     // Default colors > Edit values BUT do not delete.
     "alternate_value": 20,
     "grid_color": [50, 50, 50, 255],
+    "grid_background_color": [100, 100, 100, 255],
     "slot_border": [50, 50, 50, 255],
     "non_connectable_color": [100, 100, 100, 255],
     "connection_color": [255, 155, 0, 255],
-    "connection_sel_color": [255, 200, 0, 255],    
+    "connection_sel_color": [255, 200, 0, 255],
 
     "node_default": {
         "bg": [130, 130, 130, 255],
@@ -54,8 +55,43 @@
     // Don't forget to edit the end of the dictionary if editing the
     // following part.
 
-    "node_preset_1": {
-        "bg": [80, 80, 80, 255],
+    "node_clip": {
+        "bg": [80, 80, 128, 255],
+        "border": [50, 50, 50, 255],
+        "border_sel": [170, 80, 80, 255],
+        "text": [230, 230, 230, 255]
+    },
+
+    "node_payload": {
+        "bg": [80, 128, 80, 255],
+        "border": [50, 50, 50, 255],
+        "border_sel": [170, 80, 80, 255],
+        "text": [230, 230, 230, 255]
+    },
+
+    "node_variant": {
+        "bg": [128, 80, 80, 255],
+        "border": [50, 50, 50, 255],
+        "border_sel": [170, 80, 80, 255],
+        "text": [230, 230, 230, 255]
+    },
+
+    "node_reference": {
+        "bg": [80, 128, 128, 255],
+        "border": [50, 50, 50, 255],
+        "border_sel": [170, 80, 80, 255],
+        "text": [230, 230, 230, 255]
+    },
+
+    "node_specialize": {
+        "bg": [128, 80, 128, 255],
+        "border": [50, 50, 50, 255],
+        "border_sel": [170, 80, 80, 255],
+        "text": [230, 230, 230, 255]
+    },
+
+    "node_texture": {
+        "bg": [190, 140, 70, 255],
         "border": [50, 50, 50, 255],
         "border_sel": [170, 80, 80, 255],
         "text": [230, 230, 230, 255]
