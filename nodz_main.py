@@ -16,6 +16,11 @@ import nodz_extra
 defaultConfigPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.json')
 
 
+class VariantAnimation(QtCore.QVariantAnimation):
+    def updateCurrentValue(self, value):
+        pass
+
+
 class ConnectionInfo():
     def __init__(self, connectionItem):
         # Storage.
@@ -567,7 +572,7 @@ class Nodz(QtWidgets.QGraphicsView):
     
     def animFitInView(self, end_rect):
         start_rect = self._getVisibleRect()
-        anim = QtCore.QVariantAnimation()
+        anim = VariantAnimation()
         anim.setDuration = self.animSpeed
         anim.setEasingCurve(QtCore.QEasingCurve.OutCubic)
         anim.setStartValue(start_rect)
@@ -1260,8 +1265,9 @@ class Nodz(QtWidgets.QGraphicsView):
                             self.scene().setSceneRect(sceneRect)
                         
                         if node_pos.x() < 0 or node_pos.x() > self.scene().width() or node_pos.y() < 0 or node_pos.y() > self.scene().height():
-                            print("Warning: {0}: Invalid node position : ({1} ; {2}), frame dimension: ({3} ; {4}).".format(
-                                node.name, node_pos.x(), node_pos.y(), self.scene().width(), self.scene().height()))
+                            print(
+                                "Warning: {0}: Invalid node position : ({1} ; {2}), frame dimension: ({3} ; {4}).".format(
+                                    node.name, node_pos.x(), node_pos.y(), self.scene().width(), self.scene().height()))
                         
                         nodesMovedList.append(node.name)
                         fromPosList.append(node.pos())
@@ -2228,9 +2234,9 @@ class NodeItem(QtWidgets.QGraphicsItem):
                 text_height = metrics.boundingRect(self.label).height() + 14
                 margin = (text_width - self.baseWidth) * 0.5
                 textRect = QtCore.QRect(-margin,
-                                    -text_height,
-                                    text_width,
-                                    text_height)
+                                        -text_height,
+                                        text_width,
+                                        text_height)
                 
                 painter.drawText(textRect, QtCore.Qt.AlignCenter, self.label)
         
