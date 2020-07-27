@@ -1531,21 +1531,11 @@ class NodeScene(QtWidgets.QGraphicsScene):
         # General.
         self.gridSize = parent.config['grid_size']
         
-        map = QtGui.QPixmap(self.gridSize, self.gridSize)
-        gridBGColor = utils._convertDataToColor(parent.config['grid_background_color'])
-        map.fill(gridBGColor)
-        painter = QtGui.QPainter()
-        painter.begin(map)
-        gridColor = utils._convertDataToColor(parent.config['grid_color'])
-        painter.setPen(gridColor)
-        painter.drawRect(QtCore.QRectF(0, 0, self.gridSize, self.gridSize))
-        painter.end()
+        self.gridBGColor = utils._convertDataToColor(parent.config['grid_background_color'])
+        self.gridColor = utils._convertDataToColor(parent.config['grid_color'])
         
         self.parent().setDragMode(QtWidgets.QGraphicsView.NoDrag)
         # self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
-        
-        self.gridBrush = QtGui.QBrush()
-        self.gridBrush.setTexture(map)
         
         # Nodes storage.
         self.nodes = dict()
@@ -1589,6 +1579,11 @@ class NodeScene(QtWidgets.QGraphicsScene):
 
         """
         if self.views()[0].gridVisToggle:
+            nodzInst = self.parent()
+            
+            # draw background color block
+            background_brush = QtGui.QBrush(self.gridBGColor, QtCore.Qt.SolidPattern)
+            painter.fillRect(rect, background_brush)
             
             realLeft = int(rect.left())
             realRight = int(rect.right())
@@ -1606,7 +1601,7 @@ class NodeScene(QtWidgets.QGraphicsScene):
             for y in range(firstTop, realBottom, gridSize):
                 lines.append(QtCore.QLine(realLeft, y, realRight, y))
             
-            gridpen = QtGui.QPen(QtCore.Qt.darkGray)
+            gridpen = QtGui.QPen(self.gridColor)
             painter.setPen(gridpen)
             painter.drawLines(lines)
     
