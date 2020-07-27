@@ -92,7 +92,6 @@ class Arranger(object):
         
         self.start_node = start_node
         
-        rect = start_node.scene().sceneRect()
         self.cx = 0
         self.cy = 0
         
@@ -103,6 +102,9 @@ class Arranger(object):
     
     
     def arrange(self):
+        if not self.start_node:
+            return
+        
         self.visited_nodes = []
         
         pos = self.adjuster(self.start_node)
@@ -162,7 +164,7 @@ class Arranger(object):
             for node in connected_nodes:
                 # if node not in self.visited_nodes:
                 self.adjuster(node, depth=depth + 1)
-                    # self.visited_nodes.append(node)
+                # self.visited_nodes.append(node)
             
             # if just one child node, copy the vertical position
             pos = QtCore.QPointF(self.cx - depth * self.hspace, connected_nodes[0].pos().y())
