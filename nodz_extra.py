@@ -154,11 +154,14 @@ class Arranger(object):
         
         start_voffset = self.voffset
         connected_nodes = []
-        socket_names = start_node.sockets.keys()
-        for socket in socket_names:
-            for i, conn in enumerate(start_node.sockets[socket].connections):
-                node_coll = [x for x in start_node.scene().nodes.values() if x.name == conn.plugNode]
-                connected_nodes.append(node_coll[0])
+        # loop over the attrs list rather than the sockets directly
+        # because py 2.7 dicts don't maintain order
+        for attr in start_node.attrs:
+            attrdata = start_node.attrsData[attr]
+            if attrdata['socket']:
+                for i, conn in enumerate(start_node.sockets[attr].connections):
+                    node_coll = [x for x in start_node.scene().nodes.values() if x.name == conn.plugNode]
+                    connected_nodes.append(node_coll[0])
         
         if connected_nodes:
             for node in connected_nodes:
