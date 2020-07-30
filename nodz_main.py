@@ -232,17 +232,15 @@ class Nodz(QtWidgets.QGraphicsView):
         item_under_cursor = self.scene().itemAt(self.mapToScene(event.pos()), QtGui.QTransform())
         # Tablet zoom
         if (event.button() == QtCore.Qt.RightButton and
-                (event.modifiers() & QtCore.Qt.AltModifier)):
+                (event.modifiers() == QtCore.Qt.AltModifier)):
             self.currentState = 'ZOOM_VIEW'
             self.initMousePos = event.pos()
             self.zoomInitialPos = event.pos()
             self.initMouse = QtGui.QCursor.pos()
             self.setInteractive(False)
         
-        
         # Drag view
-        elif (event.button() == QtCore.Qt.MiddleButton and
-              (event.modifiers() & QtCore.Qt.AltModifier)):
+        elif event.button() == QtCore.Qt.MidButton:
             self.currentState = 'DRAG_VIEW'
             self.prevPos = event.pos()
             self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
