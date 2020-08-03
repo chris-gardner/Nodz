@@ -7,8 +7,8 @@ import copy
 import math
 
 from Qt import QtGui, QtCore, QtWidgets
-import nodz_utils as utils
-import nodz_extra
+from . import nodz_utils as utils
+from . import nodz_extra
 
 
 # reload(nodz_extra)

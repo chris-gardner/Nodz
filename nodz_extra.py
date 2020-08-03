@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 from Qt import QtGui, QtCore, QtWidgets
-import nodz_main
 
 
 class QtPopupLineEditWidget(QtWidgets.QLineEdit):
