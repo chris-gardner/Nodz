@@ -3018,6 +3018,10 @@ class ConnectionItem(QtWidgets.QGraphicsPathItem):
         return "<ConnectionItem>"
     
     
+    def contextMenuEvent(self, event):
+        pass
+    
+    
     @property
     def pen(self):
         """
