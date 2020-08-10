@@ -90,6 +90,7 @@ class Arranger(object):
         self.padding = padding
         
         self.start_node = start_node
+        self.scene = self.start_node.scene()
         
         self.cx = 0
         self.cy = 0
@@ -98,43 +99,44 @@ class Arranger(object):
         self.bbmax = [-999999999, -999999999]
         
         self.visited_nodes = []
+        self.arranged_nodes = []
+        self.node_depths = {}
+        self.fuck = [0]
+    
+    
+    def get_node_depths(self, node, depth=0):
+        """
+        Get the maximum possible depth of all the nodes
+        """
+        
+        if node.name not in self.node_depths:
+            self.node_depths[node.name] = depth
+        else:
+            self.node_depths[node.name] = max(depth, self.node_depths[node.name])
+        
+        socket_names = node.sockets.keys()
+        for socket in socket_names:
+            for i, conn in enumerate(node.sockets[socket].connections):
+                conn_node = self.scene.nodes[conn.plugNode]
+                self.get_node_depths(conn_node, depth=depth + 1)
     
     
     def arrange(self):
         if not self.start_node:
             return
         
+        self.get_node_depths(self.start_node)
+        
         self.visited_nodes = []
         
-        pos = self.adjuster(self.start_node)
-        
-        scene = self.start_node.scene()
+        self.adjuster(self.start_node)
         
         # gotta adjust the scene bounding box to fit all the nodes in
         for node in self.visited_nodes:
             node.checkIsWithinSceneRect()
         
         # updateScene() forces the graph edges to redraw after the nodes have been moved
-        scene.updateScene()
-        
-        return pos
-    
-    
-    def get_max_child_count(self, node):
-        """
-        Maximum
-        :param node:
-        :return:
-        """
-        ret = 0
-        for conn in node.sockets['layers'].connections:
-            ret += 1
-            node_coll = [x for x in node.scene().nodes.values() if x.name == conn.plugNode]
-            connected_node = node_coll[0]
-            
-            ret += self.get_max_child_count(connected_node)
-        
-        return ret
+        self.scene.updateScene()
     
     
     def adjust_bbox(self, pos):
@@ -149,9 +151,15 @@ class Arranger(object):
             self.bbmax[1] = pos.y()
     
     
-    def adjuster(self, start_node, depth=0):
+    def adjuster(self, start_node, depth=0, index=0):
+        node_depth = self.node_depths[start_node.name]
+        if start_node not in self.visited_nodes:
+            if index > 0:
+                # we don't increment the v pos if we're hanging off the first port
+                # in that case, we want to line up with the parent node
+                self.voffset += 1
+        start_y = self.voffset
         
-        start_voffset = self.voffset
         connected_nodes = []
         # loop over the attrs list rather than the sockets directly
         # because py 2.7 dicts don't maintain order
@@ -159,33 +167,17 @@ class Arranger(object):
             attrdata = start_node.attrsData[attr]
             if attrdata['socket']:
                 for i, conn in enumerate(start_node.sockets[attr].connections):
-                    node_coll = [x for x in start_node.scene().nodes.values() if x.name == conn.plugNode]
+                    node_coll = [x for x in self.scene.nodes.values() if x.name == conn.plugNode]
                     connected_nodes.append(node_coll[0])
         
         if connected_nodes:
-            for node in connected_nodes:
-                # if node not in self.visited_nodes:
-                self.adjuster(node, depth=depth + 1)
-                # self.visited_nodes.append(node)
-            
-            # if just one child node, copy the vertical position
-            pos = QtCore.QPointF(self.cx - depth * self.hspace, connected_nodes[0].pos().y())
-            
-            start_node.setPos(pos)
-            self.adjust_bbox(pos)
+            for i, node in enumerate(connected_nodes):
+                self.adjuster(node, depth=depth + 1, index=i)
         
-        else:
-            # if start_node not in self.visited_nodes:
-            # nothing connected. stack it's position vertically
-            pos = QtCore.QPointF(self.cx - depth * self.hspace, self.cy + (self.voffset) * self.vspace)
+        if start_node not in self.visited_nodes:
+            pos = QtCore.QPointF(self.cx - node_depth * self.hspace, start_y * self.vspace)
             start_node.setPos(pos)
-            if start_node not in self.visited_nodes:
-                self.voffset += 1
             self.adjust_bbox(pos)
             self.visited_nodes.append(start_node)
         
-        if depth == 0:
-            # redraw all the connections and stuff
-            start_node.scene().updateScene()
-        
-        return start_voffset + (self.voffset + start_voffset) * 0.5
+        return start_y
