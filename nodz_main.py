@@ -193,7 +193,8 @@ class Nodz(QtWidgets.QGraphicsView):
             self.keyPressEvent(event)
             return True
         
-        return super(Nodz, self).event(event)
+        if event:
+            return super(Nodz, self).event(event)
     
     
     def wheelEvent(self, event):
