@@ -83,7 +83,7 @@ class QtPopupLineEditWidget(QtWidgets.QLineEdit):
 
 
 class Arranger(object):
-    def __init__(self, start_node, hspace=400, vspace=100, padding=200):
+    def __init__(self, start_node, hspace=400, vspace=100, padding=400):
         self.voffset = 0
         self.hspace = hspace
         self.vspace = vspace
@@ -99,9 +99,7 @@ class Arranger(object):
         self.bbmax = [-999999999, -999999999]
         
         self.visited_nodes = []
-        self.arranged_nodes = []
         self.node_depths = {}
-        self.fuck = [0]
     
     
     def get_node_depths(self, node, depth=0):
@@ -132,14 +130,29 @@ class Arranger(object):
         self.adjuster(self.start_node)
         
         # gotta adjust the scene bounding box to fit all the nodes in
-        for node in self.visited_nodes:
-            node.checkIsWithinSceneRect()
+        # for node in self.visited_nodes:
+        #     node.checkIsWithinSceneRect()
+        
+        # add some padding to the bbox
+        self.bbmin[0] -= self.padding
+        self.bbmin[1] -= self.padding
+        self.bbmax[0] += self.padding
+        self.bbmax[1] += self.padding
+        
+        print(self.bbmin, self.bbmax)
+        
+        sceneRect = QtCore.QRect(self.bbmin[0], self.bbmin[1],
+                                 self.bbmax[0] - self.bbmin[0],
+                                 self.bbmax[1] - self.bbmin[1])
+        print('sceneRect', sceneRect)
+        self.scene.setSceneRect(sceneRect)
         
         # updateScene() forces the graph edges to redraw after the nodes have been moved
         self.scene.updateScene()
     
     
     def adjust_bbox(self, pos):
+        
         if pos.x() < self.bbmin[0]:
             self.bbmin[0] = pos.x()
         if pos.x() > self.bbmax[0]:
