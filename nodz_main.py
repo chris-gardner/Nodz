@@ -994,9 +994,10 @@ class Nodz(QtWidgets.QGraphicsView):
         self.scene().selectionChanged.connect(self._returnSelection)
     
     
-    def create_overview_widget(self):
+    def create_overview_widget(self, width=150):
         self.show_overview = True
         self.overview_widget = OverviewWidget()
+        self.overview_widget.width = width
         self.scene().addItem(self.overview_widget)
         self.overview_widget.setFlags(QtWidgets.QGraphicsItem.ItemIgnoresTransformations)
     
