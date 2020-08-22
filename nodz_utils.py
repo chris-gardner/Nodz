@@ -6,6 +6,22 @@ import re
 from Qt import QtCore, QtGui
 
 
+def remap(value, start, end, new_start, new_end):
+    """
+    Remaps a numerical value to a new range
+    
+    :param value: value to remap
+    :param start: lower limit of old range
+    :param end: upper limit of old range
+    :param new_start: lower limit of new range
+    :param new_end: upper limit of new range
+    :return: remapped value
+    """
+    
+    NewValue = (((value - start) * (new_end - new_start)) / (end - start)) + new_start
+    return NewValue
+
+
 def _convertDataToColor(data=None, alternate=False, av=20):
     """
     Convert a list of 3 (rgb) or 4(rgba) values from the configuration
@@ -26,19 +42,20 @@ def _convertDataToColor(data=None, alternate=False, av=20):
         color = QtGui.QColor(data[0], data[1], data[2])
         if alternate:
             mult = _generateAlternateColorMultiplier(color, av)
-
-
-            color = QtGui.QColor(max(0, data[0]-(av*mult)), max(0, data[1]-(av*mult)), max(0, data[2]-(av*mult)))
+            
+            color = QtGui.QColor(max(0, data[0] - (av * mult)), max(0, data[1] - (av * mult)),
+                                 max(0, data[2] - (av * mult)))
         return color
-
+    
     # rgba
     elif len(data) == 4:
         color = QtGui.QColor(data[0], data[1], data[2], data[3])
         if alternate:
             mult = _generateAlternateColorMultiplier(color, av)
-            color = QtGui.QColor(max(0, data[0]-(av*mult)), max(0, data[1]-(av*mult)), max(0, data[2]-(av*mult)), data[3])
+            color = QtGui.QColor(max(0, data[0] - (av * mult)), max(0, data[1] - (av * mult)),
+                                 max(0, data[2] - (av * mult)), data[3])
         return color
-
+    
     # wrong
     else:
         print('Color from configuration is not recognized : ', data)
@@ -46,8 +63,9 @@ def _convertDataToColor(data=None, alternate=False, av=20):
         print('Using default color !')
         color = QtGui.QColor(120, 120, 120)
         if alternate:
-            color = QtGui.QColor(120-av, 120-av, 120-av)
+            color = QtGui.QColor(120 - av, 120 - av, 120 - av)
         return color
+
 
 def _generateAlternateColorMultiplier(color, av):
     """
@@ -62,9 +80,10 @@ def _generateAlternateColorMultiplier(color, av):
 
     """
     lightness = color.lightness()
-    mult = float(lightness)/255
-
+    mult = float(lightness) / 255
+    
     return mult
+
 
 def _createPointerBoundingBox(pointerPos, bbSize):
     """
@@ -79,16 +98,17 @@ def _createPointerBoundingBox(pointerPos, bbSize):
     """
     # Create pointer's bounding box.
     point = pointerPos
-
+    
     mbbPos = point
     point.setX(point.x() - bbSize / 2)
     point.setY(point.y() - bbSize / 2)
-
+    
     size = QtCore.QSize(bbSize, bbSize)
     bb = QtCore.QRect(mbbPos, size)
     bb = QtCore.QRectF(bb)
-
+    
     return bb
+
 
 def _swapListIndices(inputList, oldIndex, newIndex):
     """
@@ -105,15 +125,15 @@ def _swapListIndices(inputList, oldIndex, newIndex):
 
     """
     if oldIndex == -1:
-        oldIndex = len(inputList)-1
-
-
+        oldIndex = len(inputList) - 1
+    
     if newIndex == -1:
         newIndex = len(inputList)
-
+    
     value = inputList[oldIndex]
     inputList.pop(oldIndex)
     inputList.insert(newIndex, value)
+
 
 # IO
 def _loadConfig(filePath):
@@ -126,13 +146,14 @@ def _loadConfig(filePath):
     """
     with open(filePath, 'r') as myfile:
         fileString = myfile.read()
-
+        
         # remove comments
         cleanString = re.sub('//.*?\n|/\*.*?\*/', '', fileString, re.S)
-
+        
         data = json.loads(cleanString)
-
+    
     return data
+
 
 def _saveData(filePath, data):
     """
@@ -147,12 +168,13 @@ def _saveData(filePath, data):
     """
     f = open(filePath, "w")
     f.write(json.dumps(data,
-                       sort_keys = True,
-                       indent = 4,
+                       sort_keys=True,
+                       indent=4,
                        ensure_ascii=False))
     f.close()
-
+    
     print("Data successfully saved !")
+
 
 def _loadData(filePath):
     """
@@ -164,9 +186,8 @@ def _loadData(filePath):
     """
     with open(filePath) as json_file:
         j_data = json.load(json_file)
-
+    
     json_file.close()
-
+    
     print("Data successfully loaded !")
     return j_data
-

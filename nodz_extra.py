@@ -139,12 +139,10 @@ class Arranger(object):
         self.bbmax[0] += self.padding
         self.bbmax[1] += self.padding
         
-        print(self.bbmin, self.bbmax)
         
         sceneRect = QtCore.QRect(self.bbmin[0], self.bbmin[1],
                                  self.bbmax[0] - self.bbmin[0],
                                  self.bbmax[1] - self.bbmin[1])
-        print('sceneRect', sceneRect)
         self.scene.setSceneRect(sceneRect)
         
         # updateScene() forces the graph edges to redraw after the nodes have been moved

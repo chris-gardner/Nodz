@@ -30,6 +30,131 @@ class ConnectionInfo():
         self.plugAttr = connectionItem.plugAttr
 
 
+class OverviewWidget(QtWidgets.QGraphicsItem):
+    def __init__(self):
+        super(OverviewWidget, self).__init__()
+        color = QtGui.QColor(128, 128, 128)
+        self.width = 150
+        
+        self._brush = QtGui.QBrush()
+        self._brush.setStyle(QtCore.Qt.SolidPattern)
+        self._brush.setColor(color)
+        
+        self._pen = QtGui.QPen()
+        self._pen.setStyle(QtCore.Qt.SolidLine)
+        self._pen.setWidth(2)
+        self._pen.setColor(color)
+        self.setZValue(50)
+        
+        self.prevPos = None
+        
+        self.muteEvents = False
+        
+        self.currentState = 'DEFAULT'
+    
+    
+    def contextMenuEvent(self, event):
+        pass
+    
+    
+    def paint(self, painter, option, widget):
+        """
+        Paint the node and attributes.
+
+        """
+        
+        nodzInst = self.scene().views()[0]
+        
+        # overview background
+        painter.setBrush(self._brush)
+        painter.setPen(self._pen)
+        painter.setOpacity(0.5)
+        viewport_rect = QtCore.QRect(0, 0, nodzInst.viewport().width(), nodzInst.viewport().height())
+        bounds = self.scene().sceneRect()
+        vis = nodzInst.mapToScene(viewport_rect).boundingRect()
+        
+        painter.drawRect(0, 0, self.width, self.width)
+        
+        # draw the nodes
+        painter.setOpacity(1)
+        
+        node_no_sel_col = QtGui.QColor(0, 0, 0)
+        
+        node_no_sel_brush = QtGui.QBrush()
+        node_no_sel_brush.setStyle(QtCore.Qt.SolidPattern)
+        node_no_sel_brush.setColor(node_no_sel_col)
+        
+        node_no_sel_pen = QtGui.QPen()
+        node_no_sel_pen.setStyle(QtCore.Qt.SolidLine)
+        node_no_sel_pen.setWidth(1)
+        node_no_sel_pen.setColor(node_no_sel_col)
+        
+        node_sel_col = QtGui.QColor(200, 200, 200)
+        
+        node_sel_brush = QtGui.QBrush()
+        node_sel_brush.setStyle(QtCore.Qt.SolidPattern)
+        node_sel_brush.setColor(node_sel_col)
+        
+        node_sel_pen = QtGui.QPen()
+        node_sel_pen.setStyle(QtCore.Qt.SolidLine)
+        node_sel_pen.setWidth(1)
+        node_sel_pen.setColor(node_sel_col)
+        
+        scene = self.scene()
+        for item in scene.items():
+            if isinstance(item, NodeItem):
+                pos = item.pos()
+                x = utils.remap(pos.x(), bounds.left(), bounds.right(), 0, self.width)
+                y = utils.remap(pos.y(), bounds.bottom(), bounds.top(), self.width, 0)
+                if item.isSelected():
+                    painter.setBrush(node_sel_brush)
+                    painter.setPen(node_sel_pen)
+                
+                else:
+                    painter.setBrush(node_no_sel_brush)
+                    painter.setPen(node_no_sel_pen)
+                
+                painter.drawRect(x, y, 4, 2)
+        
+        # draw the current view box
+        color = QtGui.QColor(0, 128, 128)
+        
+        brush = QtGui.QBrush()
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        brush.setColor(color)
+        
+        pen = QtGui.QPen()
+        pen.setStyle(QtCore.Qt.SolidLine)
+        pen.setWidth(2)
+        pen.setColor(color)
+        painter.setBrush(brush)
+        painter.setPen(pen)
+        
+        painter.setOpacity(0.5)
+        
+        left = utils.remap(vis.left(), bounds.left(), bounds.right(), 0, 1)
+        bottom = utils.remap(vis.bottom(), bounds.bottom(), bounds.top(), 1, 0)
+        right = min(utils.remap(vis.right(), bounds.left(), bounds.right(), 0, 1), 1)
+        top = min(utils.remap(vis.top(), bounds.bottom(), bounds.top(), 1, 0), 1)
+        
+        l_pix = left * self.width
+        b_pix = bottom * self.width
+        r_pix = right * self.width - l_pix
+        t_pix = top * self.width - b_pix
+        
+        painter.drawRect(l_pix, b_pix, r_pix, t_pix)
+    
+    
+    def boundingRect(self):
+        """
+        The bounding rect based on the width and height variables.
+    
+        """
+        rect = QtCore.QRect(0, 0, self.width, self.width)
+        rect = QtCore.QRectF(rect)
+        return rect
+
+
 class Nodz(QtWidgets.QGraphicsView):
     """
     The main view for the node graph representation.
@@ -93,7 +218,7 @@ class Nodz(QtWidgets.QGraphicsView):
     signal_dropEvent = QtCore.Signal(object, object)  # dragDropEvent, nodzInst
     
     
-    def __init__(self, parent, configPath=defaultConfigPath):
+    def __init__(self, parent, configPath=defaultConfigPath, show_overview=True):
         """
         Initialize the graphics view.
 
@@ -128,6 +253,7 @@ class Nodz(QtWidgets.QGraphicsView):
         self.allowNodeMove = True
         self.allowConnectionEdit = True
         self.allowNodeEdit = True
+        self.show_overview = show_overview
         
         # Display options.
         self.currentState = 'DEFAULT'
@@ -145,8 +271,20 @@ class Nodz(QtWidgets.QGraphicsView):
         self.cutTool = None
         self.lastMousePos = None
         
+        self.overview_widget = None
+        
         self.setRenderHints(
             QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform | QtGui.QPainter.HighQualityAntialiasing)
+    
+    
+    def paintEvent(self, event):
+        viewport_rect = QtCore.QRect(0, 0, self.viewport().width(), self.viewport().height())
+        
+        if self.overview_widget:
+            scenePos = QtCore.QPointF(self.mapToScene(0, self.viewport().height() - self.overview_widget.width))
+            self.overview_widget.setPos(scenePos)
+        
+        super(Nodz, self).paintEvent(event)
     
     
     def setEnableDrop(self, enabled):
@@ -220,8 +358,8 @@ class Nodz(QtWidgets.QGraphicsView):
         item = self.itemAt(p.x(), p.y())
         if item is not None:
             item.contextMenuEvent(event)
+            self.signal_ViewContextMenuEvent.emit(event)
             return
-        self.signal_ViewContextMenuEvent.emit(event)
     
     
     def mousePressEvent(self, event):
@@ -230,7 +368,9 @@ class Nodz(QtWidgets.QGraphicsView):
 
         """
         
-        item_under_cursor = self.scene().itemAt(self.mapToScene(event.pos()), QtGui.QTransform())
+        # item_under_cursor = self.scene().itemAt(self.mapToScene(event.pos()), QtGui.QTransform())
+        item_under_cursor = self.scene().itemAt(self.mapToScene(event.pos()), self.viewportTransform())
+        
         # Tablet zoom
         if (event.button() == QtCore.Qt.RightButton and
                 (event.modifiers() == QtCore.Qt.AltModifier)):
@@ -255,6 +395,14 @@ class Nodz(QtWidgets.QGraphicsView):
               item_under_cursor is None):
             self.currentState = 'SELECTION'
             self._initRubberband(event.pos())
+            self.setInteractive(False)
+        
+        # Rubber band selection
+        elif (event.button() == QtCore.Qt.LeftButton and
+              (event.modifiers() == QtCore.Qt.NoModifier) and
+              isinstance(item_under_cursor, OverviewWidget)):
+            self.prevPos = event.pos()
+            self.currentState = 'OVERVIEW'
             self.setInteractive(False)
         
         # Drag Item
@@ -357,6 +505,35 @@ class Nodz(QtWidgets.QGraphicsView):
             self.prevPos = event.pos()
             self.verticalScrollBar().setValue(self.verticalScrollBar().value() + offset.y())
             self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + offset.x())
+        
+        elif self.currentState == 'OVERVIEW':
+            
+            # this is a total and delightful cheat
+            # the overview widget gets repositioned every draw,
+            # so we can't transform event co-ords into it's transform space
+            # otherwise it jumps around
+            # so just remap the event coords into where it *should* be
+            
+            viewport_x = event.pos().x()
+            viewport_y = self.viewport().height() - event.pos().y()
+            
+            # overview widget coord space
+            x = max(min(utils.remap(viewport_x, 0, self.overview_widget.width, 0, 1.0), 1), 0)
+            y = max(min(utils.remap(viewport_y, 0, self.overview_widget.width, 1.0, 0), 1), 0)
+            
+            hmin = self.horizontalScrollBar().minimum()
+            hmax = self.horizontalScrollBar().maximum()
+            
+            vmin = self.verticalScrollBar().minimum()
+            vmax = self.verticalScrollBar().maximum()
+            
+            scrollbar_x = int(utils.remap(x, 0.0, 1.0, hmin, hmax))
+            scrollbar_y = int(utils.remap(y, 0.0, 1.0, vmin, vmax))
+            
+            self.horizontalScrollBar().setValue(scrollbar_x)
+            self.verticalScrollBar().setValue(scrollbar_y)
+            
+            self.prevPos = event.pos()
         
         # cutTool Golaem
         elif self.currentState == 'CUT_LINK':
@@ -804,6 +981,7 @@ class Nodz(QtWidgets.QGraphicsView):
         sceneHeight = config['scene_height']
         scene.setSceneRect(0, 0, sceneWidth, sceneHeight)
         self.setScene(scene)
+        
         # Connect scene node moved signal
         scene.signal_NodeMoved.connect(self.signal_NodeMoved)
         
@@ -814,6 +992,13 @@ class Nodz(QtWidgets.QGraphicsView):
         
         # Connect signals.
         self.scene().selectionChanged.connect(self._returnSelection)
+    
+    
+    def create_overview_widget(self):
+        self.show_overview = True
+        self.overview_widget = OverviewWidget()
+        self.scene().addItem(self.overview_widget)
+        self.overview_widget.setFlags(QtWidgets.QGraphicsItem.ItemIgnoresTransformations)
     
     
     def initNodeCreationHelper(self, completerNodeList=[], nodeCreatorCallback=None, keyEvent=QtCore.Qt.Key_Tab):
@@ -2046,35 +2231,21 @@ class NodeItem(QtWidgets.QGraphicsItem):
         Resize scene if node position is outside of the scene
 
         """
-        currentNodz = self.scene().parent()
-        config = currentNodz.config
-        baseResolution = [config["scene_width"], config["scene_height"]]
-        borderMarginRatio = config["scene_marginRatio"]
-        
         currentPos = self.pos()
         sceneRect = self.scene().sceneRect()
         rectHasChanged = False
-        
-        borderMarginWidth = (borderMarginRatio * baseResolution[0])
-        borderMarginHeight = (borderMarginRatio * baseResolution[1])
-        
-        if currentPos.x() - borderMarginWidth < sceneRect.x():
-            xBefore = sceneRect.x()
-            sceneRect.setX(currentPos.x() - borderMarginWidth)
-            xAfter = sceneRect.x()
-            sceneRect.setWidth(sceneRect.width() + (xBefore - xAfter))
+        borderMargin = 0.2 * self.baseWidth
+        if currentPos.x() - borderMargin < sceneRect.x():
+            sceneRect.setX(currentPos.x() - borderMargin)
             rectHasChanged = True
-        if currentPos.y() - borderMarginHeight < sceneRect.y():
-            yBefore = sceneRect.y()
-            sceneRect.setY(currentPos.y() - borderMarginHeight)
-            yAfter = sceneRect.y()
-            sceneRect.setHeight(sceneRect.height() + (yBefore - yAfter))
+        if currentPos.y() - borderMargin < sceneRect.y():
+            sceneRect.setY(currentPos.y() - borderMargin)
             rectHasChanged = True
-        if currentPos.x() + borderMarginWidth > sceneRect.x() + sceneRect.width():
-            sceneRect.setWidth(currentPos.x() - sceneRect.x() + borderMarginWidth)
+        if currentPos.x() + self.baseWidth > sceneRect.x() + sceneRect.width():
+            sceneRect.setWidth(currentPos.x() + self.baseWidth + 2 * borderMargin - sceneRect.x())
             rectHasChanged = True
-        if currentPos.y() + borderMarginHeight > sceneRect.y() + sceneRect.height():
-            sceneRect.setHeight(currentPos.y() - sceneRect.y() + borderMarginHeight)
+        if currentPos.y() + self.height > sceneRect.y() + sceneRect.height():
+            sceneRect.setHeight(currentPos.y() + self.height + 2 * borderMargin - sceneRect.y())
             rectHasChanged = True
         
         if rectHasChanged:
