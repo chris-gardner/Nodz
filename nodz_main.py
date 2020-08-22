@@ -982,6 +982,9 @@ class Nodz(QtWidgets.QGraphicsView):
         scene.setSceneRect(0, 0, sceneWidth, sceneHeight)
         self.setScene(scene)
         
+        if self.show_overview:
+            self.create_overview_widget()
+        
         # Connect scene node moved signal
         scene.signal_NodeMoved.connect(self.signal_NodeMoved)
         
@@ -1689,6 +1692,8 @@ class Nodz(QtWidgets.QGraphicsView):
         self.cutTool = None
         self.scene().clear()
         self.scene().nodes = dict()
+        if self.show_overview:
+            self.create_overview_widget()
         
         # Emit signal.
         self.signal_GraphCleared.emit()
