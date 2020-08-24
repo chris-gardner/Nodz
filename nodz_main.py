@@ -132,10 +132,10 @@ class OverviewWidget(QtWidgets.QGraphicsItem):
         
         painter.setOpacity(0.5)
         
-        left = utils.remap(vis.left(), bounds.left(), bounds.right(), 0, 1)
-        bottom = utils.remap(vis.bottom(), bounds.bottom(), bounds.top(), 1, 0)
-        right = min(utils.remap(vis.right(), bounds.left(), bounds.right(), 0, 1), 1)
-        top = min(utils.remap(vis.top(), bounds.bottom(), bounds.top(), 1, 0), 1)
+        left = max(min(utils.remap(vis.left(), bounds.left(), bounds.right(), 0, 1), 1), 0)
+        bottom = max(min(utils.remap(vis.bottom(), bounds.bottom(), bounds.top(), 1, 0), 1), 0)
+        right = max(min(utils.remap(vis.right(), bounds.left(), bounds.right(), 0, 1), 1), 0)
+        top = max(min(utils.remap(vis.top(), bounds.bottom(), bounds.top(), 1, 0), 1), 0)
         
         l_pix = left * self.width
         b_pix = bottom * self.width
