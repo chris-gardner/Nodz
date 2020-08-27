@@ -277,6 +277,22 @@ class Nodz(QtWidgets.QGraphicsView):
             QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform | QtGui.QPainter.HighQualityAntialiasing)
     
     
+    def save_image(self, image_path):
+        if os.path.isfile(image_path):
+            os.remove(image_path)
+        
+        area = self.scene().sceneRect().size().toSize()
+        
+        image = QtGui.QPixmap(area)
+        painter = QtGui.QPainter(image)
+        # Render the region of interest to the QImage.
+        self.scene().render(painter)
+        painter.end()
+        
+        # Save the image to a file.
+        image.save(image_path)
+    
+    
     def paintEvent(self, event):
         viewport_rect = QtCore.QRect(0, 0, self.viewport().width(), self.viewport().height())
         
