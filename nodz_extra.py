@@ -90,7 +90,10 @@ class Arranger(object):
         self.padding = padding
         
         self.start_node = start_node
-        self.scene = self.start_node.scene()
+        if self.start_node:
+            self.scene = self.start_node.scene()
+        else:
+            self.scene = None
         
         self.cx = 0
         self.cy = 0
